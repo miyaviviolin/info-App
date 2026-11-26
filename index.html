@@ -271,7 +271,8 @@
       var fileUrl = "", fileName = "", fileType = "";
       try {
         if (fileInput.files.length > 0) {
-          var f = fileInput.files[0];
+var f = fileInput.files.item(0);
+
           fileName = f.name; fileType = f.type;
           var ext = f.name.split(".").pop();
           var path = Date.now() + "_" + Math.random().toString(36).slice(2,7) + "." + ext;
