@@ -6,7 +6,7 @@
   <title>伝達事項共有カレンダー</title>
   <link rel="apple-touch-icon" id="app-icon">
   <script>
-    (function(){
+    setTimeout(function(){
       var c = document.createElement("canvas"); c.width = c.height = 512;
       var x = c.getContext("2d");
       var g = x.createLinearGradient(0, 0, 512, 512);
@@ -17,7 +17,7 @@
       x.shadowColor = "rgba(0,30,110,0.35)"; x.shadowBlur = 18; x.shadowOffsetY = 8;
       x.fillText("291", 256, 268);
       document.getElementById("app-icon").href = c.toDataURL("image/png");
-    })();
+    }, 500);
   </script>
   <style>
     * { box-sizing: border-box; font-family: sans-serif; }
@@ -141,11 +141,7 @@
       return fetch(SB_URL + path, opt);
     }
 
-    function isDayClosed(ds, dow) {
-      if (customClosed[ds] !== undefined) return customClosed[ds];
-      return (dow === 0 || dow === 3 || Boolean(holidays[ds]));
-    }
-
+    function isDayClosed(ds, dow) { return customClosed[ds] !== undefined ? customClosed[ds] : (dow === 0 || dow === 3 || Boolean(holidays[ds])); }
     function hasUnread(m) {
       if (staffs.length === 0) return false;
       var readList = Array.isArray(m.read_by) ? m.read_by : [];
@@ -173,8 +169,6 @@
       }
     }
     draw();
-
-  
     async function onDayClick(ds, currentlyClosed) {
       if (isEditClosed) {
         var nextState = !currentlyClosed;
@@ -230,27 +224,17 @@
       await api("/memos?id=eq." + memoId, { method: "PATCH", body: JSON.stringify({ read_by: list }) });
       await loadAll();
     }
-
     async function loadAll() {
       try {
-        var r1 = await api("/memos?select=*&order=id.asc");
-        if (!r1.ok) throw new Error(await r1.text());
-        memos = await r1.json();
-
-        var r2 = await api("/staff?select=*");
-        if (!r2.ok) throw new Error(await r2.text());
-        staffs = await r2.json();
-
+        var r1 = await api("/memos?select=*&order=id.asc"); if (!r1.ok) throw new Error(await r1.text()); memos = await r1.json();
+        var r2 = await api("/staff?select=*"); if (!r2.ok) throw new Error(await r2.text()); staffs = await r2.json();
         var r3 = await api("/closed_days?select=*");
         if (r3.ok) { var cd = await r3.json(); customClosed = {}; cd.forEach(function(item){ customClosed[item.date] = item.is_closed; }); }
-
         draw();
         if (document.getElementById("day-modal").style.display === "flex") renderDayModal();
-
         var sel = document.getElementById("author"), old = sel.value;
         sel.innerHTML = '<option value="">-- 投稿者を選択 --</option>' + staffs.map(function(s){ return '<option value="' + s.name + '">' + s.name + '</option>'; }).join("");
         if (staffs.some(function(s){ return s.name === old; })) sel.value = old;
-
         document.getElementById("del-box").innerHTML = staffs.length ? staffs.map(function(s){
           return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;margin-bottom:6px;border-radius:12px;box-shadow:inset 2px 2px 5px #c1d5dc;"><span>' + s.name + '</span><button type="button" class="btn btn-danger" onclick="delS(\'' + s.name + '\')">削除</button></div>';
         }).join("") : '<p style="font-size:13px; color:#718096; text-align:center;">登録されている職員はいません</p>';
@@ -259,6 +243,8 @@
     }
     loadAll();
     setInterval(loadAll, 5000);
+    document.addEventListener("visibilitychange", function() { if (!document.hidden) { draw(); loadAll(); } });
+    window.addEventListener("pageshow", function() { draw(); loadAll(); });
 
     document.getElementById("save-memo").onclick = async function() {
       var author = document.getElementById("author").value;
@@ -266,13 +252,11 @@
       var fileInput = document.getElementById("file-input");
       if (!author) return alert("投稿者を選択してください");
       if (!body && fileInput.files.length === 0) return alert("内容を入力するかファイルを選択してください");
-
       var btn = this; btn.disabled = true; btn.innerText = "送信中...";
       var fileUrl = "", fileName = "", fileType = "";
       try {
         if (fileInput.files.length > 0) {
-var f = fileInput.files.item(0);
-
+          var f = fileInput.files.item(0);
           fileName = f.name; fileType = f.type;
           var ext = f.name.split(".").pop();
           var path = Date.now() + "_" + Math.random().toString(36).slice(2,7) + "." + ext;
