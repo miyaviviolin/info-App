@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>伝達事項共有カレンダー</title>
+  <link rel="apple-touch-icon" id="app-icon">
+  <script>
+    (function(){
+      var c = document.createElement("canvas"); c.width = c.height = 512;
+      var x = c.getContext("2d");
+      var g = x.createLinearGradient(0, 0, 512, 512);
+      g.addColorStop(0, "#4facfe"); g.addColorStop(1, "#0061ff");
+      x.fillStyle = g; x.fillRect(0, 0, 512, 512);
+      x.fillStyle = "#ffffff"; x.font = "900 185px sans-serif";
+      x.textAlign = "center"; x.textBaseline = "middle";
+      x.shadowColor = "rgba(0,30,110,0.35)"; x.shadowBlur = 18; x.shadowOffsetY = 8;
+      x.fillText("291", 256, 268);
+      document.getElementById("app-icon").href = c.toDataURL("image/png");
+    })();
+  </script>
+  <style>
+    * { box-sizing: border-box; font-family: sans-serif; }
+    body { margin: 0; padding: 14px; background: #e3f2f6; color: #3b4d59; display: flex; justify-content: center; touch-action: manipulation; }
+    .box { width: 100%; max-width: 720px; background: #e3f2f6; border-radius: 24px; padding: 18px; box-shadow: 8px 8px 16px #c1d5dc, -8px -8px 16px #ffffff; }
+    h1 { text-align: center; font-size: 19px; color: #2b6cb0; margin: 0 0 8px; text-shadow: 0 1px 2px rgba(0,0,0,0.12); }
+    .legend { display: flex; justify-content: center; gap: 14px; font-size: 12px; margin-bottom: 10px; font-weight: bold; }
+    .legend span { display: flex; align-items: center; gap: 4px; }
+    .dot-sample { width: 11px; height: 11px; border-radius: 50%; display: inline-block; background: #4facfe; }
+    #status { text-align: center; font-size: 12px; color: #e53e3e; margin-bottom: 6px; font-weight: bold; }
+    #edit-banner { display: none; text-align: center; background: #fed7d7; color: #c53030; padding: 8px; border-radius: 12px; font-size: 13px; font-weight: bold; margin-bottom: 10px; }
+    .nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .btn { background: #e3f2f6; border: none; border-radius: 14px; padding: 10px 14px; font-weight: bold; color: #3b4d59; cursor: pointer; box-shadow: 4px 4px 8px #c1d5dc, -4px -4px 8px #ffffff; font-size: 13px; }
+    .btn:active { box-shadow: inset 3px 3px 6px #c1d5dc, inset -3px -3px 6px #ffffff; }
+    .btn-primary { background: #4facfe; color: #fff; }
+    .btn-danger { background: #ffb7b2; color: #3b4d59; padding: 4px 9px; font-size: 11px; }
+    .btn-active-edit { background: #fc8181; color: #fff; box-shadow: inset 3px 3px 6px rgba(0,0,0,0.15); }
+    .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+    .dow { text-align: center; font-size: 12px; font-weight: bold; padding: 4px; color: #5a7180; }
+    .day { height: 84px; background: #e3f2f6; border-radius: 12px; padding: 8px 4px; box-shadow: 3px 3px 6px #c1d5dc, -3px -3px 6px #ffffff; cursor: pointer; font-size: 13px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; }
+    .day.closed { background: #d2e3e8; box-shadow: inset 2px 2px 5px #b8ccd2, inset -2px -2px 5px #f2f9fb; color: #8fa6b2; cursor: not-allowed; }
+    .edit-mode .day { cursor: pointer !important; border: 2px dashed #fc8181; }
+    .dots { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; min-height: 16px; align-items: center; }
+    .dot { width: 12px; height: 12px; border-radius: 50%; background: #4facfe; box-shadow: 1px 1px 2px rgba(0,0,0,0.2); }
+    .bottom-bar { display: flex; justify-content: space-between; gap: 10px; margin-top: 16px; }
+    .bottom-bar .btn { flex: 1; padding: 12px 10px; }
+    .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: none; align-items: center; justify-content: center; padding: 14px; z-index: 100; }
+    .modal-body { width: 100%; max-width: 440px; max-height: 90vh; overflow-y: auto; background: #e3f2f6; border-radius: 22px; padding: 18px; box-shadow: 8px 8px 16px #9fb8c0; }
+    select, input[type="text"], textarea { width: 100%; padding: 10px; border: none; border-radius: 12px; background: #e3f2f6; box-shadow: inset 3px 3px 6px #c1d5dc, inset -3px -3px 6px #ffffff; margin: 6px 0 12px; font-size: 15px; color: #3b4d59; }
+    .memo-card { padding: 12px; margin-bottom: 12px; border-radius: 16px; background: #e3f2f6; box-shadow: 4px 4px 8px #c1d5dc, -4px -4px 8px #ffffff; }
+    .memo-head { display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: bold; color: #2b6cb0; margin-bottom: 6px; }
+    .memo-text { font-size: 14px; white-space: pre-wrap; line-height: 1.5; margin-bottom: 8px; }
+    .memo-img { max-width: 100%; max-height: 220px; border-radius: 10px; display: block; margin: 6px 0; cursor: pointer; }
+    .pdf-link { display: inline-block; background: #fff; color: #2b6cb0; padding: 7px 12px; border-radius: 10px; font-size: 13px; font-weight: bold; text-decoration: none; box-shadow: 2px 2px 5px #c1d5dc; margin: 4px 0; }
+    .read-area { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #c9dce2; }
+    .read-chip { display: flex; align-items: center; gap: 4px; font-size: 12px; padding: 4px 8px; border-radius: 8px; background: #d6e8ed; cursor: pointer; font-weight: bold; }
+    .read-chip.checked { background: #b5ead7; color: #22543d; }
+  </style>
+</head>
+<body>
+  <div class="box" id="app-box">
+    <h1>🦷 伝達事項 共有カレンダー</h1>
+    <div class="legend">
+      <span><i class="dot-sample"></i>伝達事項あり</span>
+      <span style="color:#8fa6b2;">■休診</span>
+    </div>
+    <div id="status"></div>
+    <div id="edit-banner">休診日編集モード中：日付をタップして切替（もう一度下のボタンで終了）</div>
+    <div class="nav">
+      <button type="button" class="btn" id="prev">◀ 前月</button>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <strong id="ym" style="font-size:18px;"></strong>
+        <button type="button" class="btn" id="today-btn" style="padding:6px 10px; font-size:12px;">今月</button>
+      </div>
+      <button type="button" class="btn" id="next">次月 ▶</button>
+    </div>
+    <div class="grid" id="cal"></div>
+    <div class="bottom-bar">
+      <button type="button" class="btn" id="toggle-closed-btn">休診日の追加・削除</button>
+      <button type="button" class="btn" id="manage-staff-btn">職員の登録・削除</button>
+    </div>
+  </div>
+
+  <!-- 日付拡大モーダル（閲覧・既読チェック・新規入力） -->
+  <div class="modal" id="day-modal">
+    <div class="modal-body">
+      <h3 id="d-title" style="margin:0 0 12px; text-align:center; color:#2b6cb0;"></h3>
+      <div id="memo-list"></div>
+
+      <div style="margin-top:14px; padding-top:12px; border-top:2px dashed #c1d5dc;">
+        <div style="font-size:13px; font-weight:bold; color:#2b6cb0; margin-bottom:4px;">＋ 新しい伝達事項を入力</div>
+        <select id="author"><option value="">-- 投稿者を選択 --</option></select>
+        <textarea id="memo-input" rows="3" placeholder="伝達事項を入力してください..."></textarea>
+        <label style="font-size:12px; font-weight:bold; display:block; margin-bottom:4px;">📎 写真・PDF添付（任意）</label>
+        <input type="file" id="file-input" accept="image/*,application/pdf" style="font-size:13px; margin-bottom:12px;">
+        <div style="display:flex; gap:10px;">
+          <button type="button" class="btn" id="d-close" style="flex:1;">閉じる</button>
+          <button type="button" class="btn btn-primary" id="save-memo" style="flex:1;">登録する</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 職員の登録・削除モーダル -->
+  <div class="modal" id="staff-modal">
+    <div class="modal-body">
+      <h3 style="margin:0 0 14px; text-align:center;">職員の登録・削除</h3>
+      <label style="font-size:12px; font-weight:bold;">新しい職員を追加</label>
+      <div style="display:flex; gap:8px; margin-top:6px; margin-bottom:16px;">
+        <input type="text" id="new-name" placeholder="例：山田 太郎" style="margin:0;">
+        <button type="button" class="btn btn-primary" id="add-btn" style="white-space:nowrap;">追加</button>
+      </div>
+      <label style="font-size:12px; font-weight:bold;">登録済み職員一覧（削除）</label>
+      <div id="del-box" style="max-height:180px; overflow-y:auto; margin:8px 0 16px;"></div>
+      <button type="button" class="btn" id="staff-close" style="width:100%;">閉じる</button>
+    </div>
+  </div>
+  <script>
+    var BASE = "https://" + "krwddlhwqkgggyxdcncn" + ".supabase.co";
+    var SB_URL = BASE + "/rest/v1";
+    var SB_KEY = "sb_publishable_nfJsyzjRbQ8jeIHgVHwoqg_-B1glb0G";
+    var cur = new Date(), selDate = "", memos = [], staffs = [], holidays = {}, customClosed = {}, isEditClosed = false;
+
+    fetch("https://" + "holidays-jp.github.io" + "/api/v1/date.json").then(function(r){ return r.json(); }).then(function(d){ holidays = d; draw(); }).catch(function(){});
+
+    function api(path, opt) {
+      opt = opt || {};
+      var h = { "apikey": SB_KEY, "Authorization": "Bearer " + SB_KEY, "Content-Type": "application/json" };
+      if (opt.headers) { for (var k in opt.headers) h[k] = opt.headers[k]; }
+      opt.headers = h;
+      return fetch(SB_URL + path, opt);
+    }
+
+    function isDayClosed(ds, dow) {
+      if (customClosed[ds] !== undefined) return customClosed[ds];
+      return (dow === 0 || dow === 3 || Boolean(holidays[ds]));
+    }
+
+    function draw() {
+      var y = cur.getFullYear(), m = cur.getMonth();
+      document.getElementById("ym").innerText = y + "年 " + (m + 1) + "月";
+      var cal = document.getElementById("cal");
+      cal.innerHTML = ["日","月","火","水","木","金","土"].map(function(d){ return '<div class="dow">' + d + '</div>'; }).join("");
+      var first = new Date(y, m, 1).getDay(), last = new Date(y, m + 1, 0).getDate();
+      for (var i = 0; i < first; i++) cal.innerHTML += '<div></div>';
+      for (var d = 1; d <= last; d++) {
+        var dow = new Date(y, m, d).getDay();
+        var ds = y + "-" + String(m+1).padStart(2,"0") + "-" + String(d).padStart(2,"0");
+        var closed = isDayClosed(ds, dow);
+        var dayMemos = memos.filter(function(x){ return x.date === ds; });
+        var dots = dayMemos.map(function(){ return '<span class="dot"></span>'; }).join("");
+        if (closed) {
+          cal.innerHTML += '<div class="day closed" onclick="onDayClick(\'' + ds + '\', true)"><strong>' + d + '</strong><span style="font-size:10px;">休診</span></div>';
+        } else {
+          cal.innerHTML += '<div class="day" onclick="onDayClick(\'' + ds + '\', false)"><strong>' + d + '</strong><div class="dots">' + dots + '</div></div>';
+        }
+      }
+    }
+    draw();
+    async function onDayClick(ds, currentlyClosed) {
+      if (isEditClosed) {
+        var nextState = !currentlyClosed;
+        var dayMemos = memos.filter(function(x){ return x.date === ds; });
+        if (nextState && dayMemos.length > 0) {
+          if (!confirm(ds + " を休診日に変更しますか？\n（※登録されている " + dayMemos.length + "件 の伝達事項はリセットされます）")) return;
+          await api("/memos?date=eq." + ds, { method: "DELETE" });
+        }
+        await api("/closed_days?on_conflict=date", { method: "POST", headers: { "Prefer": "resolution=merge-duplicates" }, body: JSON.stringify({ date: ds, is_closed: nextState }) });
+        await loadAll();
+        return;
+      }
+      if (currentlyClosed) return;
+      selDate = ds;
+      renderDayModal();
+      document.getElementById("day-modal").style.display = "flex";
+    }
+
+    function renderDayModal() {
+      document.getElementById("d-title").innerText = selDate + " の伝達事項";
+      var dayMemos = memos.filter(function(x){ return x.date === selDate; });
+      var box = document.getElementById("memo-list");
+      if (dayMemos.length === 0) {
+        box.innerHTML = '<p style="text-align:center; font-size:13px; color:#718096; margin:8px 0;">まだ伝達事項はありません</p>';
+        return;
+      }
+      box.innerHTML = dayMemos.map(function(m) {
+        var readList = Array.isArray(m.read_by) ? m.read_by : [];
+        var fileHtml = "";
+        if (m.file_url) {
+          if (m.file_type && m.file_type.indexOf("image") === 0) {
+            fileHtml = '<a href="' + m.file_url + '" target="_blank"><img src="' + m.file_url + '" class="memo-img"></a>';
+          } else {
+            fileHtml = '<a href="' + m.file_url + '" target="_blank" class="pdf-link">📄 ' + (m.file_name || "PDFファイルを開く") + '</a>';
+          }
+        }
+        var checks = staffs.map(function(s) {
+          var isDone = readList.indexOf(s.name) !== -1;
+          return '<label class="read-chip ' + (isDone ? 'checked' : '') + '"><input type="checkbox" ' + (isDone ? 'checked' : '') + ' onchange="toggleRead(' + m.id + ',\'' + s.name + '\')">' + s.name + '</label>';
+        }).join("");
+        return '<div class="memo-card"><div class="memo-head"><span>✍️ ' + m.author + '</span><button type="button" class="btn btn-danger" onclick="delMemo(' + m.id + ')">削除</button></div>' +
+          (m.body ? '<div class="memo-text">' + m.body.replace(/</g,"&lt;") + '</div>' : '') + fileHtml +
+          '<div class="read-area">' + checks + '</div></div>';
+      }).join("");
+    }
+
+    async function toggleRead(memoId, staffName) {
+      var target = memos.find(function(x){ return x.id === memoId; });
+      if (!target) return;
+      var list = Array.isArray(target.read_by) ? target.read_by.slice() : [];
+      var idx = list.indexOf(staffName);
+      if (idx === -1) list.push(staffName); else list.splice(idx, 1);
+      await api("/memos?id=eq." + memoId, { method: "PATCH", body: JSON.stringify({ read_by: list }) });
+      await loadAll();
+    }
+
+    async function loadAll() {
+      try {
+        var r1 = await api("/memos?select=*&order=id.asc");
+        if (!r1.ok) throw new Error(await r1.text());
+        memos = await r1.json();
+
+        var r2 = await api("/staff?select=*");
+        if (!r2.ok) throw new Error(await r2.text());
+        staffs = await r2.json();
+
+        var r3 = await api("/closed_days?select=*");
+        if (r3.ok) { var cd = await r3.json(); customClosed = {}; cd.forEach(function(item){ customClosed[item.date] = item.is_closed; }); }
+
+        draw();
+        if (document.getElementById("day-modal").style.display === "flex") renderDayModal();
+
+        var sel = document.getElementById("author"), old = sel.value;
+        sel.innerHTML = '<option value="">-- 投稿者を選択 --</option>' + staffs.map(function(s){ return '<option value="' + s.name + '">' + s.name + '</option>'; }).join("");
+        if (staffs.some(function(s){ return s.name === old; })) sel.value = old;
+
+        document.getElementById("del-box").innerHTML = staffs.length ? staffs.map(function(s){
+          return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;margin-bottom:6px;border-radius:12px;box-shadow:inset 2px 2px 5px #c1d5dc;"><span>' + s.name + '</span><button type="button" class="btn btn-danger" onclick="delS(\'' + s.name + '\')">削除</button></div>';
+        }).join("") : '<p style="font-size:13px; color:#718096; text-align:center;">登録されている職員はいません</p>';
+        document.getElementById("status").innerText = "";
+      } catch (e) { document.getElementById("status").innerText = "エラー: " + e.message; }
+    }
+    loadAll();
+    setInterval(loadAll, 5000);
+
+    document.getElementById("save-memo").onclick = async function() {
+      var author = document.getElementById("author").value;
+      var body = document.getElementById("memo-input").value.trim();
+      var fileInput = document.getElementById("file-input");
+      if (!author) return alert("投稿者を選択してください");
+      if (!body && fileInput.files.length === 0) return alert("内容を入力するかファイルを選択してください");
+
+      var btn = this; btn.disabled = true; btn.innerText = "送信中...";
+      var fileUrl = "", fileName = "", fileType = "";
+      try {
+        if (fileInput.files.length > 0) {
+          var f = fileInput.files[0];
+          fileName = f.name; fileType = f.type;
+          var ext = f.name.split(".").pop();
+          var path = Date.now() + "_" + Math.random().toString(36).slice(2,7) + "." + ext;
+          var upRes = await fetch(BASE + "/storage/v1/object/attachments/" + path, {
+            method: "POST",
+            headers: { "apikey": SB_KEY, "Authorization": "Bearer " + SB_KEY, "Content-Type": f.type || "application/octet-stream" },
+            body: f
+          });
+          if (!upRes.ok) throw new Error("ファイル送信失敗: " + await upRes.text());
+          fileUrl = BASE + "/storage/v1/object/public/attachments/" + path;
+        }
+        var res = await api("/memos", { method: "POST", body: JSON.stringify({ date: selDate, author: author, body: body, file_url: fileUrl, file_name: fileName, file_type: fileType, read_by: [author] }) });
+        if (!res.ok) throw new Error(await res.text());
+        document.getElementById("memo-input").value = "";
+        fileInput.value = "";
+        await loadAll();
+      } catch (e) { alert("エラー: " + e.message); }
+      btn.disabled = false; btn.innerText = "登録する";
+    };
+
+    async function delMemo(id) { if (confirm("この伝達事項を削除しますか？")) { await api("/memos?id=eq." + id, { method: "DELETE" }); await loadAll(); } }
+    async function delS(name) { if (confirm("「" + name + "」さんをリストから削除しますか？")) { await api("/staff?name=eq." + encodeURIComponent(name), { method: "DELETE" }); loadAll(); } }
+    document.getElementById("toggle-closed-btn").onclick = function() {
+      isEditClosed = !isEditClosed;
+      this.classList.toggle("btn-active-edit", isEditClosed);
+      this.innerText = isEditClosed ? "休診日の編集を終了" : "休診日の追加・削除";
+      document.getElementById("edit-banner").style.display = isEditClosed ? "block" : "none";
+      document.getElementById("app-box").classList.toggle("edit-mode", isEditClosed);
+    };
+    document.getElementById("manage-staff-btn").onclick = function() { document.getElementById("staff-modal").style.display = "flex"; };
+    document.getElementById("staff-close").onclick = function() { document.getElementById("staff-modal").style.display = "none"; };
+    document.getElementById("d-close").onclick = function() { document.getElementById("day-modal").style.display = "none"; };
+    document.getElementById("prev").onclick = function() { cur.setMonth(cur.getMonth() - 1); draw(); };
+    document.getElementById("next").onclick = function() { cur.setMonth(cur.getMonth() + 1); draw(); };
+    document.getElementById("today-btn").onclick = function() { cur = new Date(); draw(); };
+    document.getElementById("add-btn").onclick = async function() {
+      var n = document.getElementById("new-name").value.trim();
+      if (!n) return alert("名前を入力してください");
+      if (staffs.some(function(s){ return s.name === n; })) return alert("すでに登録されています");
+      var res = await api("/staff", { method: "POST", body: JSON.stringify({ name: n }) });
+      if (!res.ok) return alert("追加エラー: " + await res.text());
+      document.getElementById("new-name").value = "";
+      await loadAll();
+    };
+  </script>
+</body>
+</html>
