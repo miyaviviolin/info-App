@@ -125,6 +125,56 @@
       <button type="button" class="btn" id="staff-close" style="width:100%;">閉じる</button>
     </div>
   </div>
+  <script>
+    var BASE = "https://" + "krwddlhwqkgggyxdcncn" + ".supabase.co";
+    var SB_URL = BASE + "/rest/v1";
+    var SB_KEY = "sb_publishable_nfJsyzjRbQ8jeIHgVHwoqg_-B1glb0G";
+    var cur = new Date(), selDate = "", memos = [], staffs = [], holidays = {}, customClosed = {}, isEditClosed = false;
+
+    fetch("https://" + "holidays-jp.github.io" + "/api/v1/date.json").then(function(r){ return r.json(); }).then(function(d){ holidays = d; draw(); }).catch(function(){});
+
+    function api(path, opt) {
+      opt = opt || {};
+      var h = { "apikey": SB_KEY, "Authorization": "Bearer " + SB_KEY, "Content-Type": "application/json" };
+      if (opt.headers) { for (var k in opt.headers) h[k] = opt.headers[k]; }
+      opt.headers = h;
+      return fetch(SB_URL + path, opt);
+    }
+
+    function isDayClosed(ds, dow) {
+      if (customClosed[ds] !== undefined) return customClosed[ds];
+      return (dow === 0 || dow === 3 || Boolean(holidays[ds]));
+    }
+
+    function hasUnread(m) {
+      if (staffs.length === 0) return false;
+      var readList = Array.isArray(m.read_by) ? m.read_by : [];
+      return staffs.some(function(s){ return readList.indexOf(s.name) === -1; });
+    }
+
+    function draw() {
+      var y = cur.getFullYear(), m = cur.getMonth();
+      document.getElementById("ym").innerText = y + "年 " + (m + 1) + "月";
+      var cal = document.getElementById("cal");
+      cal.innerHTML = ["日","月","火","水","木","金","土"].map(function(d){ return '<div class="dow">' + d + '</div>'; }).join("");
+      var first = new Date(y, m, 1).getDay(), last = new Date(y, m + 1, 0).getDate();
+      for (var i = 0; i < first; i++) cal.innerHTML += '<div></div>';
+      for (var d = 1; d <= last; d++) {
+        var dow = new Date(y, m, d).getDay();
+        var ds = y + "-" + String(m+1).padStart(2,"0") + "-" + String(d).padStart(2,"0");
+        var closed = isDayClosed(ds, dow);
+        var dayMemos = memos.filter(function(x){ return x.date === ds; });
+        var dots = dayMemos.map(function(x){ return '<span class="dot' + (hasUnread(x) ? ' unread' : '') + '"></span>'; }).join("");
+        if (closed) {
+          cal.innerHTML += '<div class="day closed" onclick="onDayClick(\'' + ds + '\', true)"><strong>' + d + '</strong><span style="font-size:10px;">休診</span></div>';
+        } else {
+          cal.innerHTML += '<div class="day" onclick="onDayClick(\'' + ds + '\', false)"><strong>' + d + '</strong><div class="dots">' + dots + '</div></div>';
+        }
+      }
+    }
+    draw();
+
+  
     async function onDayClick(ds, currentlyClosed) {
       if (isEditClosed) {
         var nextState = !currentlyClosed;
