@@ -55,6 +55,13 @@
     .read-area { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #c9dce2; }
     .read-chip { display: flex; align-items: center; gap: 4px; font-size: 12px; padding: 4px 8px; border-radius: 8px; background: #d6e8ed; cursor: pointer; font-weight: bold; }
     .read-chip.checked { background: #b5ead7; color: #22543d; }
+    @media print {
+      body { background: #fff !important; padding: 0 !important; }
+      #app-box, .no-print { display: none !important; }
+      .modal { position: static !important; background: #fff !important; display: block !important; padding: 0 !important; }
+      .modal-body { max-width: 100% !important; max-height: none !important; box-shadow: none !important; background: #fff !important; padding: 0 !important; }
+      .memo-card { box-shadow: none !important; border: 1px solid #cbd5e0 !important; background: #fff !important; break-inside: avoid; }
+    }
   </style>
 </head>
 <body>
@@ -81,13 +88,16 @@
     </div>
   </div>
 
-  <!-- 日付拡大モーダル（閲覧・既読チェック・新規入力） -->
+  <!-- 日付拡大モーダル -->
   <div class="modal" id="day-modal">
     <div class="modal-body">
-      <h3 id="d-title" style="margin:0 0 12px; text-align:center; color:#2b6cb0;"></h3>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 id="d-title" style="margin:0; color:#2b6cb0;"></h3>
+        <button type="button" class="btn no-print" id="print-btn" style="padding:6px 12px; font-size:12px;">🖨 印刷 / PDF</button>
+      </div>
       <div id="memo-list"></div>
 
-      <div style="margin-top:14px; padding-top:12px; border-top:2px dashed #c1d5dc;">
+      <div class="no-print" style="margin-top:14px; padding-top:12px; border-top:2px dashed #c1d5dc;">
         <div style="font-size:13px; font-weight:bold; color:#2b6cb0; margin-bottom:4px;">＋ 新しい伝達事項を入力</div>
         <select id="author"><option value="">-- 投稿者を選択 --</option></select>
         <textarea id="memo-input" rows="3" placeholder="伝達事項を入力してください..."></textarea>
@@ -197,7 +207,7 @@
           var isDone = readList.indexOf(s.name) !== -1;
           return '<label class="read-chip ' + (isDone ? 'checked' : '') + '"><input type="checkbox" ' + (isDone ? 'checked' : '') + ' onchange="toggleRead(' + m.id + ',\'' + s.name + '\')">' + s.name + '</label>';
         }).join("");
-        return '<div class="memo-card"><div class="memo-head"><span>✍️ ' + m.author + '</span><button type="button" class="btn btn-danger" onclick="delMemo(' + m.id + ')">削除</button></div>' +
+        return '<div class="memo-card"><div class="memo-head"><span>✍️ ' + m.author + '</span><button type="button" class="btn btn-danger no-print" onclick="delMemo(' + m.id + ')">削除</button></div>' +
           (m.body ? '<div class="memo-text">' + m.body.replace(/</g,"&lt;") + '</div>' : '') + fileHtml +
           '<div class="read-area">' + checks + '</div></div>';
       }).join("");
@@ -253,7 +263,7 @@
       var fileUrl = "", fileName = "", fileType = "";
       try {
         if (fileInput.files.length > 0) {
-          var f = fileInput.files[0];
+          var f = fileInput.files;
           fileName = f.name; fileType = f.type;
           var ext = f.name.split(".").pop();
           var path = Date.now() + "_" + Math.random().toString(36).slice(2,7) + "." + ext;
@@ -286,6 +296,7 @@
     document.getElementById("manage-staff-btn").onclick = function() { document.getElementById("staff-modal").style.display = "flex"; };
     document.getElementById("staff-close").onclick = function() { document.getElementById("staff-modal").style.display = "none"; };
     document.getElementById("d-close").onclick = function() { document.getElementById("day-modal").style.display = "none"; };
+    document.getElementById("print-btn").onclick = function() { window.print(); };
     document.getElementById("prev").onclick = function() { cur.setMonth(cur.getMonth() - 1); draw(); };
     document.getElementById("next").onclick = function() { cur.setMonth(cur.getMonth() + 1); draw(); };
     document.getElementById("today-btn").onclick = function() { cur = new Date(); draw(); };
