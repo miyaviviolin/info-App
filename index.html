@@ -103,7 +103,12 @@
         <select id="author"><option value="">-- 投稿者を選択 --</option></select>
         <textarea id="memo-input" rows="3" placeholder="伝達事項を入力してください..."></textarea>
         <label style="font-size:12px; font-weight:bold; display:block; margin-bottom:4px;">📎 写真・PDF添付（任意）</label>
-        <input type="file" id="file-input" accept="image/*,application/pdf" style="font-size:13px; margin-bottom:12px;">
+
+              <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+        <input type="file" id="file-input" accept="image/*,application/pdf" style="font-size:13px; flex:1; margin:0;">
+        <button type="button" class="btn btn-danger" id="clear-file-btn" style="display:none; white-space:nowrap;">✕ 解除</button>
+      </div>
+
         <div style="display:flex; gap:10px;">
           <button type="button" class="btn" id="d-close" style="flex:1;">閉じる</button>
           <button type="button" class="btn btn-primary" id="save-memo" style="flex:1;">登録する</button>
