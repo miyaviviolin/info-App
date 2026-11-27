@@ -307,6 +307,10 @@
       document.getElementById("new-name").value = "";
       await loadAll();
     };
+    document.getElementById("file-input").onchange = function() { document.getElementById("clear-file-btn").style.display = this.files.length > 0 ? "inline-block" : "none"; };
+    document.getElementById("clear-file-btn").onclick = function() { document.getElementById("file-input").value = ""; this.style.display = "none"; };
+
+    
   </script>
 </body>
 </html>
