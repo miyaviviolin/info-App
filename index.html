@@ -278,6 +278,8 @@
         if (!res.ok) throw new Error(await res.text());
         document.getElementById("memo-input").value = "";
         fileInput.value = "";
+        document.getElementById("clear-file-btn").style.display = "none";
+
         await loadAll();
       } catch (e) { alert("エラー: " + e.message); }
       btn.disabled = false; btn.innerText = "登録する";
